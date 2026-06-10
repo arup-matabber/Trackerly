@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internship Tracker</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e2e2de;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #1a1a1a;
+    --radius: 10px;
+    --blue: #1e6fdb;
+    --blue-light: #e8f1fb;
+    --purple: #5a45c8;
+    --purple-light: #edebff;
+    --amber: #b07100;
+    --amber-light: #fdf3dc;
+    --green: #1a7d4a;
+    --green-light: #e2f5ec;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --gray: #555;
+    --gray-light: #efefed;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+  /* SIDEBAR LAYOUT */
+  .layout { display: flex; height: 100vh; }
+  .sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+  .sidebar-header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h1 { font-size: 15px; font-weight: 600; }
+  .sidebar-header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sidebar-menu { flex: 1; padding: 10px 8px; }
+  .menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--muted); border: none; background: none; width: 100%; text-align: left; }
+  .menu-item:hover { background: var(--bg); color: var(--text); }
+  .menu-item.active { background: var(--accent); color: #fff; }
+  .menu-item .count { margin-left: auto; font-size: 11px; background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 10px; }
+  .menu-item:not(.active) .count { background: var(--border); color: var(--muted); }
+  .menu-label { font-size: 11px; color: var(--muted); padding: 10px 10px 4px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 16px 24px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .topbar h2 { font-size: 16px; font-weight: 600; }
+  .search-wrap { flex: 1; max-width: 320px; }
+  .search-wrap input { width: 100%; padding: 7px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; background: var(--bg); color: var(--text); outline: none; }
+  .search-wrap input:focus { border-color: #aaa; }
+  .btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.88; background: var(--accent); }
+  .btn-danger { background: var(--red-light); color: var(--red); border-color: #f5c6c3; }
+  .btn-danger:hover { background: #f9d9d7; }
+
+  /* STATS BAR */
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 24px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; }
+  .stat .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat .value { font-size: 26px; font-weight: 600; color: var(--text); }
+  .stat.warn .value { color: var(--amber); }
+
+  /* CARDS */
+  .cards-area { flex: 1; overflow-y: auto; padding: 16px 24px; }
+  .cards-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; transition: box-shadow 0.15s; }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .card.remind-due { border-left: 3px solid var(--amber); }
+
+  .card-top { display: flex; align-items: flex-start; gap: 12px; }
+  .avatar { width: 42px; height: 42px; min-width: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+  .card-body { flex: 1; }
+  .card-body .company { font-size: 15px; font-weight: 600; }
+  .card-body .role { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 999px; margin-top: 6px; }
+  .badge-applied     { background: var(--blue-light); color: var(--blue); }
+  .badge-reached_out { background: var(--purple-light); color: var(--purple); }
+  .badge-no_response { background: var(--gray-light); color: var(--gray); }
+  .badge-call        { background: var(--amber-light); color: var(--amber); }
+  .badge-interview   { background: var(--green-light); color: var(--green); }
+  .badge-offer       { background: #d0f0e0; color: #0a5c32; }
+  .badge-rejected    { background: var(--red-light); color: var(--red); }
+
+  .card-actions { display: flex; gap: 6px; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 5px; border-radius: 6px; font-size: 16px; line-height: 1; }
+  .icon-btn:hover { background: var(--bg); color: var(--text); }
+
+  .card-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--muted); align-items: center; }
+  .card-meta a { color: var(--blue); text-decoration: none; }
+  .card-meta a:hover { text-decoration: underline; }
+  .remind-chip { background: var(--amber-light); color: var(--amber); padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+  .overdue-chip { background: var(--red-light); color: var(--red); padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+
+  .card-notes { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.55; background: var(--bg); border-radius: 6px; padding: 8px 10px; }
+
+  .stage-track { display: flex; gap: 3px; margin-top: 10px; }
+  .stage-pip { flex: 1; height: 3px; border-radius: 2px; background: var(--border); }
+  .stage-pip.on { background: var(--accent); }
+
+  .status-select { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); margin-top: 10px; cursor: pointer; outline: none; }
+  .status-select:focus { border-color: #aaa; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 15px; }
+  .empty small { font-size: 13px; display: block; margin-top: 6px; }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 12px; padding: 24px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #aaa; }
+  .field textarea { resize: vertical; min-height: 72px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>💼 Internship Tracker</h1>
+      <p>UX Design Roles</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-label">Filter by status</div>
+      <button class="menu-item active" onclick="setFilter('all')" id="f-all">All <span class="count" id="c-all">0</span></button>
+      <button class="menu-item" onclick="setFilter('applied')" id="f-applied">Applied <span class="count" id="c-applied">0</span></button>
+      <button class="menu-item" onclick="setFilter('reached_out')" id="f-reached_out">Reached out <span class="count" id="c-reached_out">0</span></button>
+      <button class="menu-item" onclick="setFilter('no_response')" id="f-no_response">No response <span class="count" id="c-no_response">0</span></button>
+      <button class="menu-item" onclick="setFilter('call')" id="f-call">Had a call <span class="count" id="c-call">0</span></button>
+      <button class="menu-item" onclick="setFilter('interview')" id="f-interview">Interview <span class="count" id="c-interview">0</span></button>
+      <button class="menu-item" onclick="setFilter('offer')" id="f-offer">Offer 🎉 <span class="count" id="c-offer">0</span></button>
+      <button class="menu-item" onclick="setFilter('rejected')" id="f-rejected">Rejected <span class="count" id="c-rejected">0</span></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="page-title">All Applications</h2>
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Search company or role..." oninput="render()">
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Application</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="label">Total</div><div class="value" id="s-total">0</div></div>
+      <div class="stat"><div class="label">Active</div><div class="value" id="s-active">0</div></div>
+      <div class="stat"><div class="label">Interviews</div><div class="value" id="s-interviews">0</div></div>
+      <div class="stat warn"><div class="label">Follow-ups due</div><div class="value" id="s-remind">0</div></div>
+    </div>
+
+    <div class="cards-area">
+      <div class="cards-grid" id="cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="overlay" id="overlay" onclick="closeOnBackdrop(event)">
+  <div class="modal">
+    <h3 id="modal-title">Add Application</h3>
+    <div class="form-row">
+      <div class="field"><label>Company name *</label><input id="m-company" placeholder="e.g. Swiggy" /></div>
+      <div class="field"><label>Role</label><input id="m-role" placeholder="e.g. UX Design Intern" /></div>
+    </div>
+    <div class="form-row full">
+      <div class="field"><label>Source link (LinkedIn / Indeed / website URL)</label><input id="m-link" type="url" placeholder="https://..." /></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Source platform</label>
+        <select id="m-source">
+          <option>LinkedIn</option><option>Indeed</option><option>Cold email</option>
+          <option>Website</option><option>Referral</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Current status</label>
+        <select id="m-status">
+          <option value="applied">Applied</option>
+          <option value="reached_out">Reached out</option>
+          <option value="no_response">No response yet</option>
+          <option value="call">Had a call</option>
+          <option value="interview">Interview scheduled</option>
+          <option value="offer">Offer received</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field"><label>Follow-up reminder date</label><input id="m-remind" type="date" /></div>
+    </div>
+    <div class="form-row full">
+      <div class="field"><label>Notes (contact person, vibe, anything useful)</label><textarea id="m-notes" placeholder="e.g. Spoke with HR, they said 2 week timeline..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApp()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES = ['applied','reached_out','call','interview','offer'];
+const STATUS_LABELS = {
+  applied:'Applied', reached_out:'Reached out', no_response:'No response',
+  call:'Had a call', interview:'Interview', offer:'Offer 🎉', rejected:'Rejected'
+};
+const COLORS = [
+  ['#dbeafe','#1e40af'],['#ede9fe','#4c1d95'],['#d1fae5','#065f46'],
+  ['#fee2e2','#7f1d1d'],['#fef3c7','#78350f'],['#fce7f3','#831843'],['#e0f2fe','#0c4a6e']
+];
+
+let apps = [];
+let filter = 'all';
+let editId = null;
+
+function colorFor(name) {
+  let h = 0; for (let c of name) h = (h*31 + c.charCodeAt(0)) & 0xffff;
+  return COLORS[h % COLORS.length];
+}
+function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
+
+async function fetchApps() {
+  const r = await fetch('/api/apps'); apps = await r.json(); render();
+}
+
+function render() {
+  const today = new Date().toISOString().slice(0,10);
+  const q = document.getElementById('search').value.toLowerCase();
+  const visible = apps.filter(a => {
+    const matchFilter = filter === 'all' || a.status === filter;
+    const matchQ = !q || a.company.toLowerCase().includes(q) || (a.role||'').toLowerCase().includes(q);
+    return matchFilter && matchQ;
+  });
+
+  // sidebar counts
+  const counts = {};
+  Object.keys(STATUS_LABELS).forEach(k => counts[k] = 0);
+  apps.forEach(a => { if (counts[a.status]!==undefined) counts[a.status]++; });
+  document.getElementById('c-all').textContent = apps.length;
+  Object.keys(counts).forEach(k => { const el = document.getElementById('c-'+k); if(el) el.textContent = counts[k]; });
+
+  // sidebar active
+  document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-'+filter)?.classList.add('active');
+
+  // stats
+  document.getElementById('s-total').textContent = apps.length;
+  document.getElementById('s-active').textContent = apps.filter(a=>!['rejected','offer'].includes(a.status)).length;
+  document.getElementById('s-interviews').textContent = counts.interview||0;
+  const reminders = apps.filter(a=>a.remind && a.remind <= today).length;
+  document.getElementById('s-remind').textContent = reminders;
+
+  // page title
+  const TITLES = { all:'All Applications', applied:'Applied', reached_out:'Reached Out',
+    no_response:'No Response', call:'Had a Call', interview:'Interview Scheduled', offer:'Offers', rejected:'Rejected' };
+  document.getElementById('page-title').textContent = TITLES[filter]||'Applications';
+
+  // cards
+  const el = document.getElementById('cards');
+  if (!visible.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">📭</div><p>${filter==='all'&&!q?'No applications yet.':'No results found.'}</p><small>${filter==='all'&&!q?'Click "+ Add Application" to get started.':''}</small></div>`;
+    return;
+  }
+
+  el.innerHTML = visible.map(a => {
+    const overdue = a.remind && a.remind <= today;
+    const soon = a.remind && !overdue && a.remind <= new Date(Date.now()+3*86400000).toISOString().slice(0,10);
+    const si = STAGES.indexOf(a.status);
+    const [bg,fg] = colorFor(a.company);
+    const dots = STAGES.map((_,i)=>`<div class="stage-pip${i<=si?' on':''}"></div>`).join('');
+    const reminderHtml = a.remind ? (overdue
+      ? `<span class="overdue-chip">⚠️ Follow up overdue: ${a.remind}</span>`
+      : `<span class="remind-chip">🔔 Follow up: ${a.remind}</span>`) : '';
+    const linkHtml = a.link
+      ? `<a href="${a.link}" target="_blank">🔗 ${a.source||'Link'}</a>` 
+      : (a.source ? `<span>${a.source}</span>` : '');
+    return `
+    <div class="card${overdue?' remind-due':''}">
+      <div class="card-top">
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(a.company)}</div>
+        <div class="card-body">
+          <div class="company">${a.company}</div>
+          <div class="role">${a.role||'UX Design Intern'}</div>
+          <span class="badge badge-${a.status}">${STATUS_LABELS[a.status]}</span>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Edit" onclick="openEdit(${a.id})">✏️</button>
+          <button class="icon-btn" title="Delete" onclick="deleteApp(${a.id})">🗑️</button>
+        </div>
+      </div>
+      <div class="stage-track">${dots}</div>
+      <div class="card-meta">
+        ${linkHtml}
+        ${a.added?`<span>Added ${a.added}</span>`:''}
+        ${reminderHtml}
+      </div>
+      ${a.notes?`<div class="card-notes">${a.notes}</div>`:''}
+      <select class="status-select" onchange="quickStatus(${a.id},this.value)" aria-label="Update status">
+        ${Object.entries(STATUS_LABELS).map(([k,l])=>`<option value="${k}"${a.status===k?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f) { filter = f; render(); }
+
+function openModal(data=null) {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Add Application';
+  ['company','role','link','notes','remind'].forEach(f=>document.getElementById('m-'+f).value = data?.(f)||'');
+  document.getElementById('m-source').value = data?.source||'LinkedIn';
+  document.getElementById('m-status').value = data?.status||'applied';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openEdit(id) {
+  const a = apps.find(x=>x.id===id); if (!a) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Edit Application';
+  document.getElementById('m-company').value = a.company||'';
+  document.getElementById('m-role').value = a.role||'';
+  document.getElementById('m-link').value = a.link||'';
+  document.getElementById('m-notes').value = a.notes||'';
+  document.getElementById('m-remind').value = a.remind||'';
+  document.getElementById('m-source').value = a.source||'LinkedIn';
+  document.getElementById('m-status').value = a.status||'applied';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); editId = null; }
+function closeOnBackdrop(e) { if (e.target.id==='overlay') closeModal(); }
+
+async function saveApp() {
+  const company = document.getElementById('m-company').value.trim();
+  if (!company) { alert('Company name is required.'); return; }
+  const payload = {
+    company, role: document.getElementById('m-role').value.trim()||'UX Design Intern',
+    link: document.getElementById('m-link').value.trim(),
+    source: document.getElementById('m-source').value,
+    status: document.getElementById('m-status').value,
+    remind: document.getElementById('m-remind').value,
+    notes: document.getElementById('m-notes').value.trim(),
+    added: new Date().toISOString().slice(0,10)
+  };
+  if (editId) {
+    await fetch(`/api/apps/${editId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  } else {
+    await fetch('/api/apps', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  }
+  closeModal(); fetchApps();
+}
+
+async function quickStatus(id, val) {
+  await fetch(`/api/apps/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:val}) });
+  fetchApps();
+}
+
+async function deleteApp(id) {
+  if (!confirm('Remove this application?')) return;
+  await fetch(`/api/apps/${id}`, { method:'DELETE' });
+  fetchApps();
+}
+
+fetchApps();
+</script>
+</body>
+</html>
